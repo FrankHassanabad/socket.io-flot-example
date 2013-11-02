@@ -7,7 +7,7 @@ This is an example of pushing data to a [flot charts](http://www.flotcharts.org/
 that instead of ajax calls it utilizes web sockets if your browser supports them.
 
 <p align="center">
-  <img src="readme-media/images/flot-chart-screen.png?raw=true" alt="Sign In"/>
+  <img src="readme-media/flot-chart-screen.png?raw=true" alt="Sign In"/>
 </p>
 
 # Installation
