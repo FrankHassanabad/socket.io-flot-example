@@ -14,10 +14,31 @@
             var socket = io.connect('http://localhost');
             var init = false;
             var plot;
+            var buffer = [];
+            var minBufferSize = 50;
+            var maxBufferSize = 300;
+            var clientInterval = null;
+            var rebuffer = true;
             socket.on('dataSet', function (data) {
+                if(buffer.length == 0) {
+                    console.log("Rebuffering");
+                    rebuffer = true;
+                } else if(buffer.length > minBufferSize){
+                    rebuffer = false;
+                }
+                if(buffer.length <= maxBufferSize) {
+                    buffer.push(data);
+                }
+            });
+
+            var repaintGraph = function() {
+                $("#buffer").text(Math.floor(buffer.length / maxBufferSize * 100));
+                if(rebuffer || buffer.length === 0) {
+                    return;
+                }
                 if(!init) {
                     init = true;
-                    plot = $.plot("#placeholder", [ data ], {
+                    plot = $.plot("#placeholder", [ buffer.shift() ], {
                         series: {
                             shadowSize: 0	// Drawing is faster without shadows
                         },
@@ -30,26 +51,61 @@
                         }
                     });
                 } else {
-                    plot.setData([data]);
+                    //If we don't have data, then we have to re-buffer
+                    //so there's nothing new to draw.
+                    plot.setData([buffer.shift()]);
                     plot.draw();
+                }
+            }
+
+            // Set up the control widget for the client
+            var clientUpdates = 30;
+            $("#updateInterval").val(clientUpdates).change(function () {
+                var v = $(this).val();
+                if (v && !isNaN(+v)) {
+                    clientUpdates = +v;
+                    if (clientUpdates < 1) {
+                        clientUpdates = 1;
+                    } else if (clientUpdates > 2000) {
+                        clientUpdates = 2000;
+                    }
+                    $(this).val("" + clientUpdates);
+                    if(clientInterval) {
+                        clearInterval(clientInterval);
+                    }
+                    clientInterval = setInterval(function () {
+                        repaintGraph();
+                    },clientUpdates);
                 }
             });
 
-            // Set up the control widget
-            var updateInterval = 30;
-            $("#updateInterval").val(updateInterval).change(function () {
+            // Set up the control widget for the server
+            var serverUpdates = 1;
+            $("#serverInterval").val(serverUpdates).change(function () {
                 var v = $(this).val();
                 if (v && !isNaN(+v)) {
-                    updateInterval = +v;
-                    if (updateInterval < 1) {
-                        updateInterval = 1;
-                    } else if (updateInterval > 2000) {
-                        updateInterval = 2000;
+                    serverUpdates = +v;
+                    if (serverUpdates < 1) {
+                        serverUpdates = 1;
+                    } else if (serverUpdates > 10000) {
+                        serverUpdates = 10000;
                     }
-                    $(this).val("" + updateInterval);
-                    socket.emit('updateInterval', updateInterval);
+                    $(this).val("" + serverUpdates);
+                    //Send to the server side that we need data within
+                    //this interval
+                    socket.emit('updateInterval', serverUpdates);
                 }
             });
+
+            //Client side, wake up an _independent_ amount of time
+            //from the server and try to repaint.  This gives us a smooth
+            //animation and nothing jerky.  You really don't want to put
+            //it within the socket call.  Let that "buffer" the data
+            //instead.
+            clientInterval = setInterval(function () {
+                repaintGraph();
+            },clientUpdates);
+
 
             // Add the Flot version string to the footer
             $("#footer").prepend("Flot " + $.plot.version + " &ndash; ");
@@ -71,8 +127,9 @@
         Update the time below in milliseconds and press enter.  This pushes the milliseconds to the server to tell the
         server how fast to push random data to the chart.
     </p>
-
-    <p>Time between updates: <input id="updateInterval" type="text" value="" style="text-align: right; width:5em"> milliseconds</p>
+    <p>Server throttle: <input id="serverInterval" type="text" value="" style="text-align: right; width:5em"> milliseconds</p>
+    <p>Client throttle: &nbsp; <input id="updateInterval" type="text" value="" style="text-align: right; width:5em"> milliseconds</p>
+    <p>Current Buffer size: <span id="buffer">0</span>%</p></p>
 </div>
 </body>
 </html>

@@ -34,7 +34,7 @@ io.sockets.on('connection', function (socket) {
     var interval = setInterval(function() {
         var randomData = randomizer.getRandomData();
         socket.emit('dataSet', randomData);
-    }, 30);
+    }, 1);
     socket.on('updateInterval', function (intervalData) {
         //Update the interval that is coming from the client
         clearInterval(interval);
