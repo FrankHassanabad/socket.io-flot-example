@@ -4,14 +4,19 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Flot Examples: Real-time updates</title>
     <link href="stylesheets/examples.css" rel="stylesheet" type="text/css">
-    <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="javascripts/excanvas.min.js"></script><![endif]-->
-    <script language="javascript" type="text/javascript" src="javascripts/jquery.min.js"></script>
-    <script language="javascript" type="text/javascript" src="javascripts/jquery.flot.min.js"></script>
-    <script language="javascript" type="text/javascript" src="javascripts/socket.io.js"></script>
+    <!--[if lte IE 8]><script type="text/javascript" src="javascripts/excanvas.min.js"></script><![endif]-->
+    <script type="text/javascript" src="javascripts/jquery.min.js"></script>
+    <script type="text/javascript" src="javascripts/jquery.flot.min.js"></script>
+    <script type="text/javascript" src="javascripts/socket.io.js"></script>
     <script type="text/javascript">
         $(function() {
+            //Get the URL to hand into the connect call
+            var http = location.protocol;
+            var slashes = http.concat("//");
+            var host = slashes.concat(window.location.hostname);
+
             //Socket IO communications
-            var socket = io.connect('http://localhost');
+            var socket = io.connect(host);
             var init = false;
             var plot;
             var buffer = [];
@@ -21,7 +26,7 @@
             var rebuffer = true;
             socket.on('dataSet', function (data) {
                 if(buffer.length == 0) {
-                    console.log("Rebuffering");
+                    console.log("Rebuffering...");
                     rebuffer = true;
                 } else if(buffer.length > minBufferSize){
                     rebuffer = false;
@@ -33,10 +38,7 @@
 
             var repaintGraph = function() {
                 $("#buffer").text(Math.floor(buffer.length / maxBufferSize * 100));
-                if(rebuffer || buffer.length === 0) {
-                    return;
-                }
-                if(!init) {
+                if (!init && buffer.length > 0) {
                     init = true;
                     plot = $.plot("#placeholder", [ buffer.shift() ], {
                         series: {
@@ -50,13 +52,13 @@
                             show: false
                         }
                     });
-                } else {
+                } else if (!rebuffer && buffer.length > 0) {
                     //If we don't have data, then we have to re-buffer
                     //so there's nothing new to draw.
                     plot.setData([buffer.shift()]);
                     plot.draw();
                 }
-            }
+            };
 
             // Set up the control widget for the client
             var clientUpdates = 30;
@@ -106,7 +108,6 @@
                 repaintGraph();
             },clientUpdates);
 
-
             // Add the Flot version string to the footer
             $("#footer").prepend("Flot " + $.plot.version + " &ndash; ");
         });
@@ -129,7 +130,7 @@
     </p>
     <p>Server throttle: <input id="serverInterval" type="text" value="" style="text-align: right; width:5em"> milliseconds</p>
     <p>Client throttle: &nbsp; <input id="updateInterval" type="text" value="" style="text-align: right; width:5em"> milliseconds</p>
-    <p>Current Buffer size: <span id="buffer">0</span>%</p></p>
+    <p>Current Buffer size: <span id="buffer">0</span>%</p>
 </div>
 </body>
 </html>
