@@ -13,6 +13,7 @@ that instead of ajax calls it utilizes web sockets if your browser supports them
 # Installation
 ```
 git clone https://github.com/FrankHassanabad/socket.io-flot-example.git
+cd socket.io-flot-example/
 npm install
 node app.js
 ```
