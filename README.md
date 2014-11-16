@@ -6,6 +6,8 @@ This is an example of pushing data to a [flot charts](http://www.flotcharts.org/
 [example](http://www.flotcharts.org/flot/examples/realtime/index.html) from flot charts with the difference being
 that instead of ajax calls it utilizes web sockets if your browser supports them.
 
+[Online Demo](http://socketioflot.herokuapp.com/)
+
 <p align="center">
   <img src="readme-media/flot-chart-screen.png?raw=true" alt="Sign In"/>
 </p>
